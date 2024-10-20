@@ -116,11 +116,13 @@ class ClassProp(object):
         if "/RW" in decl[3]:
             self.readonly = False
 
+mapped_types = {"cv::RotatedRect"}  # Global variable
+
 class ClassInfo(object):
     def __init__(self, name, decl=None):
         self.name = name
         self.mapped_name = normalize_class_name(name)
-        self.ismap = False  #CV_EXPORTS_W_MAP
+        self.ismap = (name in mapped_types)  #CV_EXPORTS_W_MAP
         self.isalgorithm = False    #if class inherits from cv::Algorithm
         self.methods = {}   #Dictionary of methods
         self.props = []     #Collection of ClassProp associated with this class

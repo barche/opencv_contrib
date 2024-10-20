@@ -74,7 +74,7 @@ class ClassInfo(ClassInfo):
     def get_cpp_code_header(self):
         if self.ismap:
             return 'mod.map_type<%s>("%s");\n'%(self.name, self.mapped_name)
-        if not self.base:
+        elif not self.base:
             return 'mod.add_type<%s>("%s");\n' % (self.name, self.mapped_name)
         else:
             return 'mod.add_type<%s>("%s", jlcxx::julia_base_type<%s>());\n' % (self.name, self.mapped_name, self.base)

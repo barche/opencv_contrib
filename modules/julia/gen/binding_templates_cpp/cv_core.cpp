@@ -22,17 +22,68 @@ template <typename T>
 struct IsSmartPointerType<cv::Ptr<T>> : std::true_type
 {
 };
-template <typename T>
-struct ConstructorPointerType<cv::Ptr<T>>
-{
-    typedef T *type;
-};
 
 template<typename T, int Val>
 struct BuildParameterList<cv::Vec<T, Val>>
 {
 typedef ParameterList<T, std::integral_constant<int, Val>> type;
 };
+
+namespace stl
+{
+
+template<>
+struct container_has_less_than_operator<Mat> : std::false_type {};
+
+template<>
+struct container_has_less_than_operator<std::vector<Mat>> : std::false_type {};
+
+template<>
+struct container_has_less_than_operator<Point2f> : std::false_type {};
+
+template<>
+struct container_has_less_than_operator<Rect2i> : std::false_type {};
+
+template<>
+struct container_has_less_than_operator<Rect2f> : std::false_type {};
+
+template<>
+struct container_has_less_than_operator<Rect2d> : std::false_type {};
+
+template<>
+struct container_has_less_than_operator<Point> : std::false_type {};
+
+
+template<> struct container_has_less_than_operator<Vec<uchar,2>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<uchar,3>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<uchar,4>> : std::false_type {};
+
+template<> struct container_has_less_than_operator<Vec<short,2>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<short,3>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<short,4>> : std::false_type {};
+
+template<> struct container_has_less_than_operator<Vec<ushort,2>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<ushort,3>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<ushort,4>> : std::false_type {};
+
+template<> struct container_has_less_than_operator<Vec<int,2>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<int,3>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<int,4>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<int,6>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<int,8>> : std::false_type {};
+
+template<> struct container_has_less_than_operator<Vec<float,2>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<float,3>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<float,4>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<float,6>> : std::false_type {};
+
+template<> struct container_has_less_than_operator<Vec<double,2>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<double,3>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<double,4>> : std::false_type {};
+template<> struct container_has_less_than_operator<Vec<double,6>> : std::false_type {};
+
+}
+
 ${include_code}
 
 
@@ -60,7 +111,6 @@ ${include_code}
 } // namespace jlcxx
 JLCXX_MODULE cv_wrap(jlcxx::Module &mod)
 {
-    mod.map_type<RotatedRect>("RotatedRect");
     mod.map_type<TermCriteria>("TermCriteria");
     mod.map_type<Range>("Range");
 

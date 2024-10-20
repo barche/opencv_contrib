@@ -26,6 +26,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 namespace jlcxx
 {
 
+/// wrapper for julia jl_array_data for different julia versions
+template <typename T>
+T* jlcxx_array_data(jl_array_t* arr) {
+#if (JULIA_VERSION_MAJOR * 100 + JULIA_VERSION_MINOR) >= 111
+  return jl_array_data(arr, T);
+#else
+  return static_cast<T*>(jl_array_data(arr));
+#endif
+}
+
 template<typename PointedT, typename CppT>
 struct ValueExtractor
 {
@@ -46,11 +56,18 @@ struct ValueExtractor<PointedT, PointedT>
 };
 
 template<typename PointedT, typename CppT>
-class array_iterator_base : public std::iterator<std::random_access_iterator_tag, CppT>
+class array_iterator_base
 {
 private:
   PointedT* m_ptr;
 public:
+
+  using iterator_category = std::random_access_iterator_tag;
+  using value_type = CppT;
+  using difference_type = ptrdiff_t;
+  using pointer = CppT*;
+  using reference = CppT&;
+
   array_iterator_base() : m_ptr(nullptr)
   {
   }
@@ -73,10 +90,24 @@ public:
     return *this;
   }
 
+  array_iterator_base<PointedT, CppT> operator++(int)
+  {
+    auto result(*this);
+    ++(*this);
+    return result;
+  }
+
   array_iterator_base<PointedT, CppT>& operator--()
   {
     --m_ptr;
     return *this;
+  }
+
+  array_iterator_base<PointedT, CppT> operator--(int)
+  {
+    auto result(*this);
+    --(*this);
+    return result;
   }
 
   array_iterator_base<PointedT, CppT>& operator+=(std::ptrdiff_t n)
@@ -121,7 +152,8 @@ public:
     JL_GC_PUSH1(&m_array);
     const size_t pos = jl_array_len(m_array);
     jl_array_grow_end(m_array, 1);
-    jl_arrayset(m_array, box<ValueT>(val), pos);
+    jl_value_t* jval = box<ValueT>(val);
+    jl_array_ptr_set(m_array, pos, jval);
     JL_GC_POP();
   }
 
@@ -163,7 +195,6 @@ template<typename ValueT, int Dim = 1>
 class ArrayRef
 {
 public:
-
   using julia_t = typename detail::ArrayElementType<ValueT>::type;
 
   ArrayRef(jl_array_t* arr) : m_array(arr)
@@ -189,22 +220,22 @@ public:
 
   iterator begin()
   {
-    return iterator(static_cast<julia_t*>(jl_array_data(wrapped())));
+    return iterator(jlcxx_array_data<julia_t>(wrapped()));
   }
 
   const_iterator begin() const
   {
-    return const_iterator(static_cast<julia_t*>(jl_array_data(wrapped())));
+    return const_iterator(jlcxx_array_data<julia_t>(wrapped()));
   }
 
   iterator end()
   {
-    return iterator(static_cast<julia_t*>(jl_array_data(wrapped())) + jl_array_len(wrapped()));
+    return iterator(jlcxx_array_data<julia_t>(wrapped()) + jl_array_len(wrapped()));
   }
 
   const_iterator end() const
   {
-    return const_iterator(static_cast<julia_t*>(jl_array_data(wrapped())) + jl_array_len(wrapped()));
+    return const_iterator(jlcxx_array_data<julia_t>(wrapped()) + jl_array_len(wrapped()));
   }
 
   void push_back(const ValueT& val)
@@ -215,18 +246,18 @@ public:
     JL_GC_PUSH1(&arr_ptr);
     const size_t pos = size();
     jl_array_grow_end(arr_ptr, 1);
-    jl_arrayset(arr_ptr, box<ValueT>(val), pos);
+    data()[pos] = val;
     JL_GC_POP();
   }
 
   const julia_t* data() const
   {
-    return (julia_t*)jl_array_data(wrapped());
+    return jlcxx_array_data<julia_t>(wrapped());
   }
 
   julia_t* data()
   {
-    return (julia_t*)jl_array_data(wrapped());
+    return jlcxx_array_data<julia_t>(wrapped());
   }
 
   std::size_t size() const
@@ -293,7 +324,7 @@ struct PackedArrayType<T*, WrappedPtrTrait>
 {
   static jl_datatype_t* type()
   {
-    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Ptr"), jl_svec1(julia_base_type<T>()));
+    return apply_type(jlcxx::julia_type("Ptr"), julia_base_type<T>());
   }
 };
 
